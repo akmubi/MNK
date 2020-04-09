@@ -27,13 +27,12 @@ void mat_init_array		(Matrix *mat, double *array, size_t rows, size_t columns);
 void mat_transpose		(Matrix *mat);
 void mat_print			(Matrix *mat);
 void mat_mul			(Matrix *first, Matrix *second);
-void mat_mul_vec		(Matrix *matrix, double *vector);
+void mat_mul_vec		(Matrix *matrix, double *vector, double *result);
 void mat_mul_s			(Matrix *mat, double scalar);
 void mat_inverse		(Matrix *mat);
 double mat_minor		(double *array, size_t row_index, size_t column_index, size_t size);
 double mat_determinant	(double *array, size_t size);
 void mat_destroy		(Matrix *mat);
-
 static void static_minor(double *array, size_t row_index, size_t column_index, size_t size, double *result);
 
 // Инициализация матрицы
@@ -98,12 +97,14 @@ void mat_mul(Matrix *first, Matrix *second)
 		}
 }
 
-void mat_mul_vec(Matrix *matrix, double *vector)
+void mat_mul_vec(Matrix *matrix, double *vector, double *result)
 {
 	double *temp_vector = (double *)malloc(matrix->rows * sizeof(*temp_vector));
 	for (size_t i = 0; i < matrix->rows; i++)
 		for (size_t j = 0; j < matrix->columns; j++)
 			temp_vector[i] += matrix->array[i * matrix->columns + j] * vector[j];
+	for (size_t i = 0; i < matrix->columns; i++)
+		result[i] = temp_vector[i];
 #if !defined(__linux__)
 	free(temp_vector);
 #endif

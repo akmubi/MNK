@@ -160,8 +160,27 @@ int main(void)
 	mat_destroy(&matrix);
 	return 0;
 }
+void copy_array(double *source, double *dist, size_t n)
+{
+	for (size_t i = 0; i < n; i++)
+		dist[i] = source[i];
+}
 
 void MNK_rate(double *y_array, double *x_array, double *result)
 {
-
+	// X^t, X^t
+	double x_transposed[X_M * X_N - 2], x_transposed2[X_M * X_N - 2];
+	// X -> [X^t]
+	copy_array(x_array, x_transposed, X_M * X_N - 2);
+	copy_array(x_array, x_transposed2, X_M * X_N - 2);
+	// [X^t] -> X^t
+	mat_transpose(x_transposed);
+	// X^t * X
+	mat_mul(x_transposed, x_array);
+	// (X^t * X)^-1
+	// mat_inverse(x_transposed);
+	// (X^t * X)^-1 * X^t
+	mat_mul(x_transposed, x_transposed2);
+	// (X^t * X)^-1 * X^t * y = a
+	mat_mul_vec(x_transposed, y_array, result);
 }
