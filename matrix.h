@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 
 // Перестановка
 #define MAT_SWAP(A, B) { (A) ^= (B); (B) ^= (A); (A) ^= (B); }
@@ -157,10 +158,20 @@ void mat_inverse(Matrix *mat)
 
 	// Создание союзной матрицы
 	// Заполнение алгебраическими дополнениями
+	Matrix additions;
+	mat_init(&additions, size, size);
 	for (size_t i = 0; i < size; i++)
 		for (size_t j = 0; j < size; j++)
-			mat->array[i * size + j] = mat_minor(mat, i, j);
-	
+			additions.array[i * size + j] = mat_minor(mat, i, j);
+	//
+	//
+	for (size_t i = 0; i < size; i++)
+		for (size_t j = 0; j < size; j++)
+			mat->array[i * size + j] = additions.array[i * size + j];
+	mat_destroy(&additions);
+	//
+	//
+
 	// Деление на определитель союзной матрицы
 	mat_mul_s(mat, 1 / determinant);
 }
@@ -191,7 +202,11 @@ double mat_determinant(Matrix *mat)
 		static_minor(mat, 0, i, &temp_mat);
 
 		sum += mat->array[i] * ((i & 1) ? -1 : 1) * mat_determinant(&temp_mat);
+		//
+		//
 		mat_destroy(&temp_mat);
+		//
+		//
 	}
 	return sum;
 }
@@ -226,6 +241,7 @@ double mat_minor(Matrix *mat, size_t row_index, size_t column_index)
 	//
 	static_minor(mat, row_index, column_index, &temp_mat);
 	double determinant = mat_determinant(&temp_mat);
+	determinant *= ((row_index + column_index) & 1) ? -1 : 1;
 	//
 	//
 	mat_destroy(&temp_mat);
