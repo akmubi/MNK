@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 // Перестановка
 #define MAT_SWAP(A, B) { (A) ^= (B); (B) ^= (A); (A) ^= (B); }
@@ -27,36 +26,48 @@ void mat_init_array		(Matrix *mat, double *array, size_t rows, size_t columns);
 void mat_transpose		(Matrix *mat);
 void mat_print			(Matrix *mat);
 void mat_mul			(Matrix *first, Matrix *second);
-void mat_mul_vec		(Matrix *matrix, double *vector, double *result);
+void mat_mul_vec		(Matrix *mat, Vector *vec, Vector *result);
 void mat_mul_s			(Matrix *mat, double scalar);
 void mat_inverse		(Matrix *mat);
-double mat_minor		(double *array, size_t row_index, size_t column_index, size_t size);
-double mat_determinant	(double *array, size_t size);
+double mat_minor		(Matrix *mat, size_t row_index, size_t column_index);
+double mat_determinant	(Matrix *mat);
 void mat_destroy		(Matrix *mat);
-static void static_minor(double *array, size_t row_index, size_t column_index, size_t size, double *result);
+static void static_minor(Matrix *mat, size_t row_index, size_t column_index, Matrix *result);
 
-// Инициализация матрицы
+// Создание матрицы, заполненного нулями
 void mat_init(Matrix *mat, size_t rows, size_t columns)
 {
+	assert(mat != NULL);
 	mat->rows = rows;
 	mat->columns = columns;
 	mat->array = (double *)malloc(rows * columns * sizeof(*mat->array));
+	//
+	//
 	for (size_t i = 0; i < rows; i++)
 		for (size_t j = 0; j < columns; j++)
 			mat->array[i * columns + j] = 0.0;
 }
 
-// Инициализация матрицы массивом
+// Создание матрицы, заполненного значениями из массива
 void mat_init_array(Matrix *mat, double *array, size_t rows, size_t columns)
 {
+	assert(mat != NULL && array != NULL);
 	mat->rows = rows;
 	mat->columns = columns;
-	mat->array = array;
+	mat->array = (double *)malloc(rows * columns * sizeof(*mat->array));
+	//
+	//
+	for (size_t i = 0; i < rows; i++)
+		for (size_t j = 0; j < columns; j++)
+			mat->array[i * columns + j] = array[i * columns + j];
 }
 
 // Транспонирование матрицы
 void mat_transpose(Matrix *mat)
 {
+	assert(mat != NULL);
+	//
+	//
 	double *temp_array = (double *)malloc(mat->rows * mat->columns * sizeof(*temp_array));
 	for (size_t i = 0; i < mat->rows; i++)
 		for (size_t j = 0; j < mat->columns; j++)
@@ -66,53 +77,66 @@ void mat_transpose(Matrix *mat)
 		for (size_t j = 0; j < mat->columns; j++)
 			mat->array[i * mat->columns + j] = temp_array[i * mat->columns + j];
 	
-	mat->columns ^= mat->rows;
-	mat->rows ^= mat->columns;
-	mat->columns ^= mat->rows;
-#if !defined(__linux__)
+	MAT_SWAP(mat->columns, mat->rows);
+	//
+	//
 	free(temp_array);
-#endif
 }
 
 // Вывод матрицы
 void mat_print(Matrix *mat)
 {
+	assert(mat != NULL);
+	//
+	//
 	for (size_t i = 0; i < mat->rows; i++)
 	{
 		for (size_t j = 0; j < mat->columns; j++)
-			printf("%3.1f\t", mat->array[i * mat->columns + j]);
+			printf("%3.2f\t", mat->array[i * mat->columns + j]);
 		printf("\n");
 	}
+	printf("\n");
 }
 
+// Умножение матриц
 void mat_mul(Matrix *first, Matrix *second)
 {
+	assert(first != NULL && second != NULL);
+	//
+	//
 	for (size_t i = 0; i < first->rows; i++)
 		for (size_t j = 0; j < first->columns; j++)
 		{
-			double accum;
+			double accum = 0.0;
 			for (size_t k = 0; k < second->rows; k++)
-				accum += first->array[i * first->columns + k] * second->array[k * second->columns + i];
+				accum += first->array[i * first->columns + k] * second->array[k * second->columns + j];
 			first->array[i * first->columns + j] = accum;
 		}
 }
 
-void mat_mul_vec(Matrix *matrix, double *vector, double *result)
+// Умножение матрицы на вектор
+void mat_mul_vec(Matrix *mat, Vector *vec, Vector *result)
 {
-	double *temp_vector = (double *)malloc(matrix->rows * sizeof(*temp_vector));
-	for (size_t i = 0; i < matrix->rows; i++)
-		for (size_t j = 0; j < matrix->columns; j++)
-			temp_vector[i] += matrix->array[i * matrix->columns + j] * vector[j];
-	for (size_t i = 0; i < matrix->columns; i++)
-		result[i] = temp_vector[i];
-#if !defined(__linux__)
-	free(temp_vector);
-#endif
+	assert(vec != NULL && mat != NULL && result != NULL);
+	// Количество столбцов у матрицы и размерность вектора должны быть одинаковыми
+	assert(mat->columns == vec->size);
+	assert(result->size == vec->size);
+	//
+	//
+	for (size_t i = 0; i < mat->rows; i++)
+	{
+		result->array[i] = 0.0;
+		for (size_t j = 0; j < mat->columns; j++)
+			result->array[i] += mat->array[i * mat->columns + j] * vec->array[j];
+	}
 }
 
 // Умножение матрицы на скаляр
 void mat_mul_s(Matrix *mat, double scalar)
 {
+	assert(mat != NULL);
+	//
+	//
 	for (size_t i = 0; i < mat->rows; i++)
 		for (size_t j = 0; j < mat->columns; j++)
 				mat->array[i * mat->columns + j] *= scalar;
@@ -123,81 +147,105 @@ void mat_mul_s(Matrix *mat, double scalar)
 // Нахождение обратной матрицы
 void mat_inverse(Matrix *mat)
 {
+	assert(mat != NULL);
 	// Матрица должна быть квадратной
 	assert(mat->rows == mat->columns);
-
+	//
+	//
 	size_t size = mat->rows;
 
-	double determinant = mat_determinant(mat->array, size);
+	double determinant = mat_determinant(mat);
 
 	// Определитель не должен быть 0
 	assert(determinant != 0);
+
+	// Транспонирование
+	mat_transpose(mat);
 
 	// Создание союзной матрицы
 	// Заполнение алгебраическими дополнениями
 	for (size_t i = 0; i < size; i++)
 		for (size_t j = 0; j < size; j++)
-			mat->array[i * size + j] = mat_minor(mat->array, i, j, size);
-	
-	// Транспонирование
-	mat_transpose(mat);
+			mat->array[i * size + j] = mat_minor(mat, i, j);
 	
 	// Деление на определитель союзной матрицы
 	mat_mul_s(mat, 1 / determinant);
 }
 
 // Нахождение определителя
-double mat_determinant(double *array, size_t size)
+double mat_determinant(Matrix *mat)
 {
-	if (size == 1) return array[0];
-	if (size == 2) return array[0] * array[size + 1] - array[1] * array[size];
+	assert(mat != NULL);
+	assert(mat->columns == mat->rows);
 
-	static double sum = 0.0;
+	size_t size = mat->columns;
+	//
+	//
+	if (size == 1) return mat->array[0];
+	if (size == 2) return mat->array[0] * mat->array[size + 1] - mat->array[1] * mat->array[size];
+
+	double sum = 0.0;
 	for (size_t i = 0; i < size; i++)
 	{
-		double *temp_array = (double *)malloc((size - 1) * (size - 1) * sizeof(*temp_array));
-		static_minor(array, size + 1, i, size, temp_array);
+		//
+		//
+		Matrix temp_mat;
+		mat_init(&temp_mat, size - 1, size - 1);
+		//
+		//
 
-		sum += array[i] * ((i % 2) ? 1 : -1) * mat_determinant(temp_array, size - 1);
-#if !defined(__linux__)
-		free(temp_array);
-#endif
+		// По первой строке
+		static_minor(mat, 0, i, &temp_mat);
+
+		sum += mat->array[i] * ((i & 1) ? -1 : 1) * mat_determinant(&temp_mat);
+		mat_destroy(&temp_mat);
 	}
 	return sum;
 }
 
-void static_minor(double *array, size_t row_index, size_t column_index, size_t size, double *result)
+void static_minor(Matrix *mat, size_t row_index, size_t column_index, Matrix *result)
 {
+	assert(mat != NULL && result != NULL);
+	assert(mat->columns == mat->rows);
+	size_t size = mat->columns;
+	//
+	//
 	size_t iter = 0;
 	for (size_t i = 0; i < size; i++)
 		for (size_t j = 0; j < size; j++)
 		{
 			if (i == row_index || j == column_index)
 				continue;
-			result[iter++] = array[i * size + j];
+			result->array[iter++] = mat->array[i * size + j];
 		}
 }
 
 // Алгебраическое дополнение
-double mat_minor(double *array, size_t row_index, size_t column_index, size_t size)
+double mat_minor(Matrix *mat, size_t row_index, size_t column_index)
 {
-	double *temp_array = (double *)malloc((size - 1) * (size - 1) * sizeof(*temp_array));
-	static_minor(array, row_index, column_index, size, temp_array);
-	double determinant = mat_determinant(temp_array, size - 1);
-#if !defined (__linux__)
-	free(temp_array);
-#endif
+	assert(mat != NULL);
+	assert(mat->rows == mat->columns);
+	size_t size = mat->columns;
+
+	Matrix temp_mat;
+	mat_init(&temp_mat, size - 1, size - 1);
+	//
+	//
+	static_minor(mat, row_index, column_index, &temp_mat);
+	double determinant = mat_determinant(&temp_mat);
+	//
+	//
+	mat_destroy(&temp_mat);
 	return determinant;
 }
 
 // Освобождение ресурсов
 void mat_destroy(Matrix *mat)
 {
+	assert(mat != NULL);
+	if (mat->array != NULL) free(mat->array);
+	mat->array = NULL;
 	mat->rows = 0;
 	mat->columns = 0;
-#if !defined (__linux__)
-	if (mat->array != NULL) free(mat->array);
-#endif
-	mat->array = NULL;
 }
 #endif // _MATRIX_H_

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "vector.h"
 #include "matrix.h"
 
 #define Y_N 57
@@ -132,7 +133,7 @@ double X[X_N][X_M] =
 };
 
 // Нахождение МНК-оценки
-void MNK_rate(double *y_array, double *x_array, double *result);
+void MNK_rate(Vector *y_vec, Matrix *x_mat, Vector *result);
 
 int main(void)
 {
@@ -142,45 +143,55 @@ int main(void)
 		{ 0,  4, -1 },
 		{ 5,  0,  0 }
 	};
-
 	Matrix matrix;
 	// mat_init_array(&matrix, &X[0][0], X_N, X_M);
 	mat_init_array(&matrix, &array[0][0], 3, 3);
-	
-	mat_print(&matrix);
+
+	// printf("det = %3.1f\n", mat_determinant(&matrix));
 	
 	// printf("transposing...\n");
 	// mat_transpose(&matrix);
 	// mat_print(&matrix);
 	
-	// printf("inversing...\n");
-	// mat_inverse(&matrix);
-	// mat_print(&matrix);
+	printf("inversing...\n");
+	mat_inverse(&matrix);
+	mat_print(&matrix);
 
-	mat_destroy(&matrix);
+	// mat_destroy(&matrix);
 	return 0;
 }
+
 void copy_array(double *source, double *dist, size_t n)
 {
 	for (size_t i = 0; i < n; i++)
 		dist[i] = source[i];
 }
 
-void MNK_rate(double *y_array, double *x_array, double *result)
+void MNK_rate(Vector *y_vec, Matrix *x_mat, Vector *a_vec)
 {
 	// X^t, X^t
-	double x_transposed[X_M * X_N - 2], x_transposed2[X_M * X_N - 2];
+	Matrix x_transposed, x_transposed2;
+	
 	// X -> [X^t]
-	copy_array(x_array, x_transposed, X_M * X_N - 2);
-	copy_array(x_array, x_transposed2, X_M * X_N - 2);
+	mat_init_array(&x_transposed, x_mat->array, X_M, X_N);
+	mat_init_array(&x_transposed2, x_mat->array, X_M, X_N);
+
 	// [X^t] -> X^t
-	mat_transpose(x_transposed);
+	mat_transpose(&x_transposed);
+	mat_transpose(&x_transposed2);
+
 	// X^t * X
-	mat_mul(x_transposed, x_array);
+	mat_mul(&x_transposed, x_mat);
+	
 	// (X^t * X)^-1
-	// mat_inverse(x_transposed);
+	mat_inverse(&x_transposed);
+
 	// (X^t * X)^-1 * X^t
-	mat_mul(x_transposed, x_transposed2);
+	mat_mul(&x_transposed, &x_transposed2);
+
 	// (X^t * X)^-1 * X^t * y = a
-	mat_mul_vec(x_transposed, y_array, result);
+	mat_mul_vec(&x_transposed, y_vec, a_vec);
+
+	mat_destroy(&x_transposed);
+	mat_destroy(&x_transposed2);
 }
