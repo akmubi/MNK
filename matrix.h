@@ -9,14 +9,7 @@
 
 typedef struct
 {
-	union
-	{
-		double *array;
-
-		// Для операции с xor
-		long long int *array_int;
-	};
-	
+	double *array;
 	size_t rows;
 	size_t columns;
 } Matrix;
