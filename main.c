@@ -71,7 +71,7 @@ const double y[Y_N] =
 };
 
 // Матрица независимых признаков X (57x6) с фиктивным столбцом
-double X[X_N][X_M] =
+const double X[X_N][X_M] =
 {
 	{ 14.2, 1.9, 114.2, 125.7, 119.3, 1.0 },
 	{ 8.6, 4.6, 111.7, 126.8, 115.5, 1.0 },
@@ -137,61 +137,55 @@ void MNK_rate(Vector *y_vec, Matrix *x_mat, Vector *result);
 
 int main(void)
 {
-	double array[3][3] =
-	{
-		{ 1, -2,  3 },
-		{ 0,  4, -1 },
-		{ 5,  0,  0 }
-	};
-	Matrix matrix;
-	// mat_init_array(&matrix, &X[0][0], X_N, X_M);
-	mat_init_array(&matrix, &array[0][0], 3, 3);
+	Matrix x_mat;
+	Vector y_vec, a_vec;
 
-	// printf("det = %3.1f\n", mat_determinant(&matrix));
-	
-	// printf("transposing...\n");
-	// mat_transpose(&matrix);
-	// mat_print(&matrix);
-	
-	printf("inversing...\n");
-	mat_inverse(&matrix);
-	mat_print(&matrix);
+	mat_init_array(&x_mat, &X[0][0], X_N, X_M);
+	vec_init_array(&y_vec, &y[0], Y_N);
+	vec_init(&a_vec, Y_N);
 
-	// mat_destroy(&matrix);
+	MNK_rate(&y_vec, &x_mat, &a_vec);
+
+	
+	printf("Vector A:\n");
+	vec_print(&a_vec);
+
+	vec_destroy(&a_vec);
+	vec_destroy(&y_vec);
+	mat_destroy(&x_mat);
 	return 0;
-}
-
-void copy_array(double *source, double *dist, size_t n)
-{
-	for (size_t i = 0; i < n; i++)
-		dist[i] = source[i];
 }
 
 void MNK_rate(Vector *y_vec, Matrix *x_mat, Vector *a_vec)
 {
 	// X^t, X^t
 	Matrix x_transposed, x_transposed2;
+	Matrix multiplication, multiplication2;
 	
 	// X -> [X^t]
-	mat_init_array(&x_transposed, x_mat->array, X_M, X_N);
-	mat_init_array(&x_transposed2, x_mat->array, X_M, X_N);
+	mat_init_array(&x_transposed, x_mat->array, x_mat->rows, x_mat->columns);
+	mat_init_array(&x_transposed2, x_mat->array, x_mat->rows, x_mat->columns);
 
 	// [X^t] -> X^t
 	mat_transpose(&x_transposed);
 	mat_transpose(&x_transposed2);
 
 	// X^t * X
-	mat_mul(&x_transposed, x_mat);
+	mat_init(&multiplication, x_transposed.rows, x_mat->columns);
+	mat_mul(&x_transposed, x_mat, &multiplication);
 	
 	// (X^t * X)^-1
-	mat_inverse(&x_transposed);
+	mat_inverse(&multiplication);
 
 	// (X^t * X)^-1 * X^t
-	mat_mul(&x_transposed, &x_transposed2);
+	mat_init(&multiplication2, multiplication.rows, x_transposed2.columns);
+	mat_mul(&multiplication, &x_transposed2, &multiplication2);
 
 	// (X^t * X)^-1 * X^t * y = a
-	mat_mul_vec(&x_transposed, y_vec, a_vec);
+	mat_mul_vec(&multiplication2, y_vec, a_vec);
 
 	mat_destroy(&x_transposed);
 	mat_destroy(&x_transposed2);
+	mat_destroy(&multiplication);
+	mat_destroy(&multiplication2);
 }

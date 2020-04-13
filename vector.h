@@ -2,15 +2,16 @@
 #define _VECTOR_H_
 #include <stdlib.h>
 #include <assert.h>
+#include <stdbool.h>
 
 typedef struct
 {
 	double *array;
-	size_t size;    
+	size_t size;
 } Vector;
 
 void vec_init		(Vector *vec, size_t size);
-void vec_init_array	(Vector *vec, double *array, size_t size);
+void vec_init_array	(Vector *vec, const double *array, size_t size);
 void vec_destroy	(Vector *vec);
 void vec_print		(Vector *vec);
 
@@ -27,7 +28,7 @@ void vec_init(Vector *vec, size_t size)
 }
 
 // Создание вектора, заполненного значениями из массива
-void vec_init_array(Vector *vec, double *array, size_t size)
+void vec_init_array(Vector *vec, const double *array, size_t size)
 {
 	assert(vec != NULL);
 	assert(array != NULL);
@@ -47,7 +48,7 @@ void vec_destroy(Vector *vec)
 	vec->size = 0;
 }
 
-void vec_print (Vector *vec)
+void vec_print(Vector *vec)
 {
 	assert(vec != NULL);
 	for (size_t i = 0; i < vec->size; i++)

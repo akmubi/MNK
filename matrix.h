@@ -10,16 +10,16 @@
 
 typedef struct
 {
-	double *array;
-	size_t rows;
-	size_t columns;
+	double	*array;
+	size_t	rows;
+	size_t	columns;
 } Matrix;
 
 void mat_init			(Matrix *mat, size_t rows, size_t columns);
-void mat_init_array		(Matrix *mat, double *array, size_t rows, size_t columns);
+void mat_init_array		(Matrix *mat, const double *array, size_t rows, size_t columns);
 void mat_transpose		(Matrix *mat);
 void mat_print			(Matrix *mat);
-void mat_mul			(Matrix *first, Matrix *second);
+void mat_mul			(Matrix *first, Matrix *second, Matrix *result);
 void mat_mul_vec		(Matrix *mat, Vector *vec, Vector *result);
 void mat_mul_s			(Matrix *mat, double scalar);
 void mat_inverse		(Matrix *mat);
@@ -43,7 +43,7 @@ void mat_init(Matrix *mat, size_t rows, size_t columns)
 }
 
 // Создание матрицы, заполненного значениями из массива
-void mat_init_array(Matrix *mat, double *array, size_t rows, size_t columns)
+void mat_init_array(Matrix *mat, const double *array, size_t rows, size_t columns)
 {
 	assert(mat != NULL && array != NULL);
 	mat->rows = rows;
@@ -93,19 +93,16 @@ void mat_print(Matrix *mat)
 }
 
 // Умножение матриц
-void mat_mul(Matrix *first, Matrix *second)
+void mat_mul(Matrix *first, Matrix *second, Matrix *result)
 {
 	assert(first != NULL && second != NULL);
+	assert(result->rows == first->rows && result->columns == second->columns);
 	//
 	//
 	for (size_t i = 0; i < first->rows; i++)
-		for (size_t j = 0; j < first->columns; j++)
-		{
-			double accum = 0.0;
+		for (size_t j = 0; j < second->columns; j++)
 			for (size_t k = 0; k < second->rows; k++)
-				accum += first->array[i * first->columns + k] * second->array[k * second->columns + j];
-			first->array[i * first->columns + j] = accum;
-		}
+				result->array[i * first->rows + j] += first->array[i * first->columns + k] * second->array[k * second->columns + j];
 }
 
 // Умножение матрицы на вектор
