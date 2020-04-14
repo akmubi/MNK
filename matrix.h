@@ -1,6 +1,5 @@
 #ifndef _MATRIX_H_
 #define _MATRIX_H_
-
 #include <assert.h>
 #include <stdlib.h>
 #include <math.h>
@@ -86,7 +85,7 @@ void mat_print(Matrix *mat)
 	for (size_t i = 0; i < mat->rows; i++)
 	{
 		for (size_t j = 0; j < mat->columns; j++)
-			printf("%3.2f\t", mat->array[i * mat->columns + j]);
+			printf("%3.10f\t", mat->array[i * mat->columns + j]);
 		printf("\n");
 	}
 	printf("\n");
@@ -101,25 +100,34 @@ void mat_mul(Matrix *first, Matrix *second, Matrix *result)
 	//
 	for (size_t i = 0; i < first->rows; i++)
 		for (size_t j = 0; j < second->columns; j++)
+		{
+			double accum = 0.0;
 			for (size_t k = 0; k < second->rows; k++)
-				result->array[i * first->rows + j] += first->array[i * first->columns + k] * second->array[k * second->columns + j];
+				accum += first->array[i * first->columns + k] * second->array[k * second->columns + j];
+			result->array[i * result->columns + j] = accum;
+		}
 }
 
 // Умножение матрицы на вектор
 void mat_mul_vec(Matrix *mat, Vector *vec, Vector *result)
 {
 	assert(vec != NULL && mat != NULL && result != NULL);
-	// Количество столбцов у матрицы и размерность вектора должны быть одинаковыми
-	assert(mat->columns == vec->size);
-	assert(result->size == vec->size);
+	// Количество столбцов/строк матрицы и размерность вектора должны быть одинаковыми
+	assert(mat->columns == vec->size || mat->rows == vec->size);
 	//
 	//
-	for (size_t i = 0; i < mat->rows; i++)
-	{
-		result->array[i] = 0.0;
-		for (size_t j = 0; j < mat->columns; j++)
-			result->array[i] += mat->array[i * mat->columns + j] * vec->array[j];
-	}
+	if (mat->columns == vec->size)
+		for (size_t i = 0; i < mat->rows; i++)
+		{
+			double accum = 0.0;
+			for (size_t j = 0; j < mat->columns; j++)
+				accum += mat->array[i * mat->columns + j] * vec->array[j];
+			result->array[i] = accum;
+		}
+	else
+		for (size_t i = 0; i < mat->rows; i++)
+			for (size_t j = 0; j < mat->columns; j++)
+				result->array[i] += mat->array[j * mat->rows + i] * vec->array[j];
 }
 
 // Умножение матрицы на скаляр
